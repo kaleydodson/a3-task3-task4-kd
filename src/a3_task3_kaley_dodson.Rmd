@@ -1,0 +1,128 @@
+---
+title: "a3_task3_kaley_dodson"
+author: "Kaley Dodson"
+date: "11/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(here)
+library(tidyverse)
+library(kableExtra)
+library(janitor)
+library(lubridate)
+```
+
+## Read in data
+
+```{r}
+urchins <- read_csv(here("data", "urchins.csv")) %>% 
+  clean_names()
+```
+
+# Section 1: Size Comparisons
+
+## Exploratory Data Visualization
+
+Here I compare the distribution of sizes between purple and red urchins using a histogram and box plot.
+
+```{r}
+ggplot(data = urchins, aes(x = size)) +
+  geom_histogram() +
+  facet_wrap(~common_name) +
+  labs(x = "size (cm)", y = "total across sites")
+```
+
+```{r}
+ggplot(data = urchins, aes(x = common_name, y = size)) +
+  geom_boxplot() +
+  labs(y = "size (cm)", x = "species")
+```
+
+## Descriptive Statistics Table
+
+Here I create a summary table that contains statistics on the sizes of purple and red urchins.
+
+```{r}
+urchins_stats <- urchins %>% 
+  group_by(common_name) %>% 
+  summarize(mean_size = mean(size, na.rm = TRUE),
+            median_size = median(size, na.rm = TRUE),
+            standard_dev = sd(size, na.rm = TRUE),
+            sample_size = n())
+
+urchins_stats %>% 
+  kable(col.names = c("Species",
+                      "Mean Size (cm)",
+                      "Median Size (cm)",
+                      "Standard Deviation",
+                      "Sample Size (n)")) %>% 
+  kable_styling(full_width = FALSE)
+```
+
+## Overall Takeaways
+
+Here I calculate actual and percent differences between the two means found in the above table.
+
+```{r}
+# actual difference
+6.776489 - 4.469797
+
+# average
+(6.776489 + 4.469797)/2
+
+# % difference
+2.306692/5.623143*100
+
+```
+
+Summary of takeaways:
+Red Urchin data has a normal distribution and grater spread compared to purple urchin data, which is positively skewed and leptokurtic. The red urchins tend to be larger as shown in the 2.3 cm difference in mean size. To calculate a percent difference in means for the two populations, I took the actual difference between the means and divided by the average of those means, and the 41% difference reinforces the relatively moderate size disparity between the two species.
+
+# Section Two: Explore Purple Urchin Counts
+
+## Wrangling
+
+Here I create a subset of data that:
+
+- retains observations only for purple urchins
+- creates a new column with only the year for each observation 
+- creates a new column with the full site name 
+
+```{r}
+purple_urchins <- urchins %>% 
+  filter(common_name == "Purple Urchin") %>% 
+  mutate(date_new = mdy(date)) %>% 
+  mutate(year = year(date_new)) %>% 
+  mutate(site_full = case_when(
+    site == "NAPL" ~ "Naples Reef",
+    site == "AQUE" ~ "Arroyo Quemado Reef",
+    site == "CARP" ~ "Carpinteria Reef",
+    site == "MOHK" ~ "Mohawk Reef",
+    site == "IVEE" ~ "Isla Vista Reef"
+  ))
+  
+```
+
+
+## Descriptive Statistics Table
+
+Here I create a summary table that totals the number of purple urchins observed at each site every year.
+
+```{r}
+purple_urchins_totals <- purple_urchins %>% 
+  count(site_full, year)
+```
+
+## Exploratory Data Visualization
+
+Here I use bar chart to compare the total number of purple urchins recorded at each site.
+
+```{r}
+ggplot(data = purple_urchins_totals, aes(y = n, x = year)) +
+  geom_col(bins = 20) +
+  facet_wrap(~site_full) +
+  aes(color = site_full)
+```
+
